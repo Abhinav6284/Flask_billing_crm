@@ -1,0 +1,112 @@
+{% extends "layout.html" %}
+{% block content %}
+<form method="POST" action="">
+    {{ form.hidden_tag() }}
+    <fieldset class="form-group">
+        <legend class="border-bottom mb-4">{{ legend }}</legend>
+        {% include 'includes/form_errors.html' %}
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                {{ form.customer_id.label(class="form-control-label") }}
+                {{ form.customer_id(class="form-select") }}
+            </div>
+            <div class="col-md-6 mb-3">
+                {{ form.due_date.label(class="form-control-label") }}
+                {{ form.due_date(class="form-control") }}
+            </div>
+        </div>
+
+        <h4 class="mt-4">Invoice Items</h4>
+        <div id="invoice-items-container">
+            {% for item_form in form.items %}
+            <div class="row invoice-item-row align-items-end mb-2">
+                <div class="col-md-5">
+                    {{ item_form.product_id.label(class="form-label") }}
+                    {{ item_form.product_id(class="form-select product-select") }}
+                </div>
+                <div class="col-md-2">
+                    {{ item_form.quantity.label(class="form-label") }}
+                    {{ item_form.quantity(class="form-control quantity-input") }}
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Price</label>
+                    <input type="text" class="form-control item-price" readonly>
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-danger remove-item-btn">Remove</button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <button type="button" id="add-item-btn" class="btn btn-secondary mt-2">Add Item</button>
+
+        <hr>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                {{ form.status.label(class="form-control-label") }}
+                {{ form.status(class="form-select") }}
+            </div>
+            <div class="col-md-4 mb-3">
+                {{ form.discount.label(class="form-control-label") }}
+                {{ form.discount(class="form-control") }}
+            </div>
+        </div>
+
+    </fieldset>
+    <div class="form-group mt-3">
+        {{ form.submit(class="btn btn-outline-info") }}
+    </div>
+</form>
+
+{% endblock content %}
+
+{% block scripts %}
+<script>
+    const productPrices = {{ product_prices| tojson }};
+
+    function updatePrice(row) {
+        const productId = row.find('.product-select').val();
+        const price = productPrices[productId] || 0;
+        row.find('.item-price').val('$' + price.toFixed(2));
+    }
+
+    $(document).ready(function () {
+        // Initial price update
+        $('.invoice-item-row').each(function () {
+            updatePrice($(this));
+        });
+
+        // Update price on product change
+        $('#invoice-items-container').on('change', '.product-select', function () {
+            updatePrice($(this).closest('.invoice-item-row'));
+        });
+
+        // Add new item
+        $('#add-item-btn').click(function () {
+            const container = $('#invoice-items-container');
+            const newIndex = container.find('.invoice-item-row').length;
+            const newRow = container.find('.invoice-item-row:first').clone();
+
+            newRow.find('select, input').each(function () {
+                const name = $(this).attr('name').replace('-0-', '-' + newIndex + '-');
+                const id = $(this).attr('id').replace('-0-', '-' + newIndex + '-');
+                $(this).attr('name', name).attr('id', id);
+                $(this).val('');
+            });
+            newRow.find('.quantity-input').val('1');
+
+            container.append(newRow);
+            updatePrice(newRow);
+        });
+
+        // Remove item
+        $('#invoice-items-container').on('click', '.remove-item-btn', function () {
+            if ($('.invoice-item-row').length > 1) {
+                $(this).closest('.invoice-item-row').remove();
+            } else {
+                alert("You must have at least one item in the invoice.");
+            }
+        });
+    });
+</script>
+{% endblock scripts %}

@@ -1,0 +1,49 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Invoices</h1>
+    <a href="{{ url_for('billing.new_invoice') }}" class="btn btn-success"><i class="bi bi-plus-circle"></i> Create New
+        Invoice</a>
+</div>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Invoice #</th>
+                <th>Customer</th>
+                <th>Date Issued</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for invoice in invoices.items %}
+            <tr>
+                <td><a href="{{ url_for('billing.view_invoice', invoice_id=invoice.id) }}">{{ invoice.invoice_number
+                        }}</a></td>
+                <td>{{ invoice.customer.name }}</td>
+                <td>{{ invoice.date_issued.strftime('%Y-%m-%d') }}</td>
+                <td>${{ '%.2f'|format(invoice.get_total()) }}</td>
+                <td>
+                    <span class="badge 
+                        {% if invoice.status == 'Paid' %}bg-success
+                        {% elif invoice.status == 'Unpaid' %}bg-warning
+                        {% else %}bg-danger{% endif %}">
+                        {{ invoice.status }}
+                    </span>
+                </td>
+                <td>
+                    <a href="{{ url_for('billing.view_invoice', invoice_id=invoice.id) }}"
+                        class="btn btn-sm btn-outline-info">View</a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center">No invoices found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock content %}

@@ -1,0 +1,81 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Market Dashboard</h1>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="bi bi-gem"></i> Commodities</h4>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Gold
+                        <span id="gold-price" class="badge bg-primary rounded-pill">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Silver
+                        <span id="silver-price" class="badge bg-primary rounded-pill">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                        </span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Crude Oil (WTI)
+                        <span id="oil-price" class="badge bg-primary rounded-pill">
+                            <div class="spinner-border spinner-border-sm" role="status"></div>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="bi bi-graph-up"></i> Stock Tracker</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ url_for('main.track_stock') }}" class="row g-3">
+                        {{ form.hidden_tag() }}
+                        <div class="col-auto">
+                            {{ form.ticker(class="form-control", placeholder="e.g. AAPL") }}
+                        </div>
+                        <div class="col-auto">
+                            {{ form.submit(class="btn btn-success") }}
+                        </div>
+                    </form>
+                    {% if form.ticker.errors %}
+                    <div class="text-danger mt-2">
+                        <small>{{ form.ticker.errors[0] }}</small>
+                    </div>
+                    {% endif %}
+                </div>
+                <ul class="list-group list-group-flush" id="stock-list">
+                    {% if tracked_stocks %}
+                    {% for ticker in tracked_stocks %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center"
+                        data-ticker="{{ ticker }}">
+                        {{ ticker }}
+                        <div>
+                            <span class="badge bg-primary rounded-pill me-2">
+                                <div class="spinner-border spinner-border-sm" role="status"></div>
+                            </span>
+                            <a href="{{ url_for('main.untrack_stock', ticker=ticker) }}"
+                                class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></a>
+                        </div>
+                    </li>
+                    {% endfor %}
+                    {% else %}
+                    <li id="no-stocks-msg" class="list-group-item text-muted">No stocks being tracked.</li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock scripts %}

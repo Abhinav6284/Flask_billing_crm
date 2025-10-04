@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Invoice {{ invoice.invoice_number }}</title>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+
+        .container {
+            width: 90%;
+            margin: auto;
+        }
+
+        .header,
+        .footer {
+            text-align: center;
+        }
+
+        .details,
+        .items {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+        }
+
+        .details th,
+        .details td,
+        .items th,
+        .items td {
+            border: 1px solid #ddd;
+            padding: 8px;
+        }
+
+        .details th {
+            text-align: left;
+            width: 30%;
+        }
+
+        .items th {
+            background-color: #f2f2f2;
+        }
+
+        .total {
+            text-align: right;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Invoice</h1>
+            <p>From: {{ current_user.username }} ({{ current_user.email }})</p>
+        </div>
+        <table class="details">
+            <tr>
+                <th>Invoice Number</th>
+                <td>{{ invoice.invoice_number }}</td>
+            </tr>
+            <tr>
+                <th>Date Issued</th>
+                <td>{{ invoice.date_issued.strftime('%B %d, %Y') }}</td>
+            </tr>
+            <tr>
+                <th>Due Date</th>
+                <td>{{ invoice.due_date.strftime('%B %d, %Y') if invoice.due_date else 'N/A' }}</td>
+            </tr>
+            <tr>
+                <th>Status</th>
+                <td>{{ invoice.status }}</td>
+            </tr>
+            <tr>
+                <th>Bill To</th>
+                <td>{{ invoice.customer.name }}<br>{{ invoice.customer.address }}</td>
+            </tr>
+        </table>
+        <table class="items">
+            <thead>
+                <tr>
+                    <th>Item</th>
+                    <th>Quantity</th>
+                    <th>Unit Price</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set subtotal = 0 %}
+                {% for item in items %}
+                <tr>
+                    <td>{{ item.name }}</td>
+                    <td>{{ item.quantity }}</td>
+                    <td>${{ "%.2f"|format(item.price) }}</td>
+                    <td>${{ "%.2f"|format(item.price * item.quantity) }}</td>
+                </tr>
+                {% set subtotal = subtotal + (item.price * item.quantity) %}
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="total">
+            <p><strong>Subtotal:</strong> ${{ "%.2f"|format(subtotal) }}</p>
+            {% if invoice.discount > 0 %}
+            <p><strong>Discount:</strong> {{ invoice.discount }}%</p>
+            {% endif %}
+            <h3><strong>Total:</strong> ${{ "%.2f"|format(invoice.get_total()) }}</h3>
+        </div>
+    </div>
+</body>
+
+</html>

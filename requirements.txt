@@ -1,0 +1,13 @@
+Flask==2.3.2
+Werkzeug==2.3.8
+Flask-SQLAlchemy==3.0.5
+Flask-Migrate==4.0.4
+Flask-Login==0.6.2
+Flask-Bcrypt==1.0.1
+Flask-WTF==1.1.1
+WTForms[email]
+python-dotenv==1.0.0
+requests==2.31.0
+WeasyPrint==59.0
+mysql-connector-python==8.1.0
+PyMySQL==1.1.0
