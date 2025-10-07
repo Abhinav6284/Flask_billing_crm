@@ -29,7 +29,6 @@ def list_invoices():
 @login_required
 def new_invoice():
     form = InvoiceForm()
-    # Populate choices for customers and products
     customers = Customer.query.filter_by(owner=current_user).all()
     products = Product.query.filter_by(owner=current_user).all()
     form.customer_id.choices = [(c.id, c.name) for c in customers]
@@ -38,12 +37,12 @@ def new_invoice():
             (p.id, f"{p.name} - ${p.price:.2f}") for p in products]
 
     if form.validate_on_submit():
+        # Create the main invoice (without discount/tax)
         invoice = Invoice(
             invoice_number=generate_invoice_number(),
             customer_id=form.customer_id.data,
             due_date=form.due_date.data,
             status=form.status.data,
-            discount=form.discount.data,
             owner=current_user
         )
         db.session.add(invoice)
@@ -57,7 +56,9 @@ def new_invoice():
                     invoice_id=invoice.id,
                     product_id=product.id,
                     quantity=item_data['quantity'],
-                    price=product.price  # Store the price at the time of creation
+                    price=product.price,
+                    discount=item_data['discount'],  # <-- ADD THIS
+                    tax=item_data['tax']            # <-- AND THIS
                 )
                 db.session.execute(insert_stmt)
 

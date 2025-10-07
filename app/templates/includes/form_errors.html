@@ -1,7 +1,23 @@
 {% if form.errors %}
 <div class="alert alert-danger">
-    {% for field, errors in form.errors.items() %}
-    <div><strong>{{ form[field].label.text }}</strong>: {{ ', '.join(errors) }}</div>
+    {% for field, error_list in form.errors.items() %}
+    <div>
+        <strong>{{ form[field].label.text }}</strong>:
+        <ul>
+            {% for error in error_list %}
+            {# This is the crucial part: Check if the error is a dictionary #}
+            {% if error is mapping %}
+            {% for subfield, sub_errors in error.items() %}
+            {# Display errors for the sub-form field #}
+            <li><strong>{{ form[field][0][subfield].label.text }}</strong>: {{ sub_errors|join(', ') }}</li>
+            {% endfor %}
+            {% else %}
+            {# This is for simple, non-nested fields #}
+            <li>{{ error }}</li>
+            {% endif %}
+            {% endfor %}
+        </ul>
+    </div>
     {% endfor %}
 </div>
 {% endif %}

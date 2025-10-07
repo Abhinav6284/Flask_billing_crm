@@ -19,20 +19,29 @@
         <h4 class="mt-4">Invoice Items</h4>
         <div id="invoice-items-container">
             {% for item_form in form.items %}
-            <div class="row invoice-item-row align-items-end mb-2">
-                <div class="col-md-5">
+            <div class="row invoice-item-row align-items-end mb-3 p-2 border rounded">
+                <div class="col-md-3">
                     {{ item_form.product_id.label(class="form-label") }}
                     {{ item_form.product_id(class="form-select product-select") }}
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     {{ item_form.quantity.label(class="form-label") }}
                     {{ item_form.quantity(class="form-control quantity-input") }}
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label">Price</label>
                     <input type="text" class="form-control item-price" readonly>
                 </div>
                 <div class="col-md-2">
+                    {{ item_form.discount.label(class="form-label") }}
+                    {{ item_form.discount(class="form-control discount-input") }}
+                </div>
+                <div class="col-md-2">
+                    {{ item_form.tax.label(class="form-label") }}
+                    {{ item_form.tax(class="form-control tax-input") }}
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label d-block">&nbsp;</label>
                     <button type="button" class="btn btn-danger remove-item-btn">Remove</button>
                 </div>
             </div>
@@ -42,13 +51,14 @@
 
         <hr>
         <div class="row">
-            <div class="col-md-4 mb-3">
-                {{ form.status.label(class="form-control-label") }}
-                {{ form.status(class="form-select") }}
+            <div class="col-md-8">
+                <div class="mb-3">
+                    {{ form.status.label(class="form-control-label") }}
+                    {{ form.status(class="form-select", style="width: 200px;") }}
+                </div>
             </div>
-            <div class="col-md-4 mb-3">
-                {{ form.discount.label(class="form-control-label") }}
-                {{ form.discount(class="form-control") }}
+            <div class="col-md-4 text-end">
+                <h3>Total: <span id="total-amount">$0.00</span></h3>
             </div>
         </div>
 
@@ -59,53 +69,86 @@
 </form>
 
 {% endblock content %}
-
 {% block scripts %}
 <script>
-    const productPrices = {{ product_prices| tojson }};
-
-    function updatePrice(row) {
-        const productId = row.find('.product-select').val();
-        const price = productPrices[productId] || 0;
-        row.find('.item-price').val('$' + price.toFixed(2));
-    }
-
     $(document).ready(function () {
-        // Initial price update
-        $('.invoice-item-row').each(function () {
-            updatePrice($(this));
+        const productPrices = {{ product_prices| tojson }};
+        const container = $('#invoice-items-container');
+
+        // --- CORE FUNCTIONS ---
+        function calculateTotal() {
+            let grandTotal = 0;
+            $('.invoice-item-row').each(function() {
+                const row = $(this);
+                const productId = row.find('.product-select').val();
+                if (!productId) return;
+
+                const quantity = parseInt(row.find('.quantity-input').val()) || 0;
+                const discount = parseFloat(row.find('.discount-input').val()) || 0;
+                const tax = parseFloat(row.find('.tax-input').val()) || 0;
+                const price = productPrices[productId] || 0;
+
+                const basePrice = quantity * price;
+                const priceAfterDiscount = basePrice * (1 - discount / 100);
+                const finalPrice = priceAfterDiscount * (1 + tax / 100);
+                
+                grandTotal += finalPrice;
+            });
+            $('#total-amount').text('$' + grandTotal.toFixed(2));
+        }
+
+        function updateRow(row) {
+            const productId = row.find('.product-select').val();
+            const price = productPrices[productId] || 0;
+            row.find('.item-price').val(price.toFixed(2));
+            calculateTotal();
+        }
+
+        // --- EVENT HANDLERS (Delegated for reliability) ---
+        container.on('change input', '.product-select, .quantity-input, .discount-input, .tax-input', function() {
+            updateRow($(this).closest('.invoice-item-row'));
         });
 
-        // Update price on product change
-        $('#invoice-items-container').on('change', '.product-select', function () {
-            updatePrice($(this).closest('.invoice-item-row'));
-        });
-
-        // Add new item
+        // --- ADD ITEM BUTTON ---
         $('#add-item-btn').click(function () {
-            const container = $('#invoice-items-container');
             const newIndex = container.find('.invoice-item-row').length;
             const newRow = container.find('.invoice-item-row:first').clone();
 
-            newRow.find('select, input').each(function () {
-                const name = $(this).attr('name').replace('-0-', '-' + newIndex + '-');
-                const id = $(this).attr('id').replace('-0-', '-' + newIndex + '-');
-                $(this).attr('name', name).attr('id', id);
-                $(this).val('');
-            });
-            newRow.find('.quantity-input').val('1');
+            // Clear all input values in the new row
+            newRow.find('input, select').each(function () {
+                const el = $(this);
+                // Update the ID and NAME attributes for WTForms
+                el.attr('id', el.attr('id').replace('-0-', `-${newIndex}-`));
+                el.attr('name', el.attr('name').replace('-0-', `-${newIndex}-`));
 
+                // Reset values
+                if (el.hasClass('quantity-input')) {
+                    el.val('1');
+                } else if (el.hasClass('discount-input') || el.hasClass('tax-input')) {
+                    el.val('0');
+                } else {
+                    el.val('');
+                }
+            });
+            
             container.append(newRow);
-            updatePrice(newRow);
+            calculateTotal(); // Recalculate total after adding
         });
 
-        // Remove item
-        $('#invoice-items-container').on('click', '.remove-item-btn', function () {
-            if ($('.invoice-item-row').length > 1) {
+        // --- REMOVE ITEM BUTTON ---
+        container.on('click', '.remove-item-btn', function () {
+            if (container.find('.invoice-item-row').length > 1) {
                 $(this).closest('.invoice-item-row').remove();
+                calculateTotal();
             } else {
                 alert("You must have at least one item in the invoice.");
             }
+        });
+
+        // --- INITIALIZE ---
+        // Run once on page load for the first item
+        $('.invoice-item-row').each(function() {
+            updateRow($(this));
         });
     });
 </script>
