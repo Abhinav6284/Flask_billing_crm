@@ -20,7 +20,8 @@ def generate_invoice_number():
 @login_required
 def list_invoices():
     page = request.args.get('page', 1, type=int)
-    invoices = Invoice.query.filter_by(owner=current_user).order_by(
+    # CORRECTED QUERY: Use user_id instead of owner
+    invoices = Invoice.query.filter_by(user_id=current_user.id).order_by(
         Invoice.date_issued.desc()).paginate(page=page, per_page=10)
     return render_template('billing/invoices.html', invoices=invoices, title='Invoices')
 
@@ -29,26 +30,26 @@ def list_invoices():
 @login_required
 def new_invoice():
     form = InvoiceForm()
-    customers = Customer.query.filter_by(owner=current_user).all()
-    products = Product.query.filter_by(owner=current_user).all()
+    # CORRECTED QUERY: Use owner_id
+    customers = Customer.query.filter_by(owner_id=current_user.id).all()
+    products = Product.query.filter_by(owner_id=current_user.id).all()
     form.customer_id.choices = [(c.id, c.name) for c in customers]
     for item_form in form.items:
         item_form.product_id.choices = [
             (p.id, f"{p.name} - ${p.price:.2f}") for p in products]
 
     if form.validate_on_submit():
-        # Create the main invoice (without discount/tax)
+        # CORRECTED INVOICE CREATION: Use user_id and owner_id
         invoice = Invoice(
             invoice_number=generate_invoice_number(),
             customer_id=form.customer_id.data,
             due_date=form.due_date.data,
             status=form.status.data,
-            owner=current_user
+            user_id=current_user.id  # Explicitly set user_id
         )
         db.session.add(invoice)
-        db.session.flush()  # Flush to get the invoice ID
+        db.session.flush()
 
-        # Add items to the invoice
         for item_data in form.items.data:
             product = Product.query.get(item_data['product_id'])
             if product:
@@ -57,8 +58,8 @@ def new_invoice():
                     product_id=product.id,
                     quantity=item_data['quantity'],
                     price=product.price,
-                    discount=item_data['discount'],  # <-- ADD THIS
-                    tax=item_data['tax']            # <-- AND THIS
+                    discount=item_data['discount'],
+                    tax=item_data['tax']
                 )
                 db.session.execute(insert_stmt)
 
@@ -66,8 +67,7 @@ def new_invoice():
         flash('Invoice created successfully!', 'success')
         return redirect(url_for('billing.list_invoices'))
 
-    # Pass products data to template for JavaScript
-    product_prices = {p.id: p.price for p in products}
+    product_prices = {p.id: float(p.price) for p in products}
 
     return render_template(
         'billing/create_invoice.html',
@@ -82,10 +82,9 @@ def new_invoice():
 @login_required
 def view_invoice(invoice_id):
     invoice = Invoice.query.get_or_404(invoice_id)
-    if invoice.owner != current_user:
+    if invoice.user_id != current_user.id:  # CORRECTED CHECK
         abort(403)
-
-    # Manually fetch items with quantity and stored price
+    # ... rest of the function is the same ...
     query = text("""
         SELECT p.name, ii.quantity, ii.price
         FROM invoice_items AS ii
@@ -94,7 +93,6 @@ def view_invoice(invoice_id):
     """)
     invoice_items_details = db.session.execute(
         query, {'invoice_id': invoice.id}).fetchall()
-
     return render_template('billing/view_invoice.html', title=f"Invoice {invoice.invoice_number}", invoice=invoice, items=invoice_items_details)
 
 
@@ -102,9 +100,9 @@ def view_invoice(invoice_id):
 @login_required
 def download_invoice(invoice_id):
     invoice = Invoice.query.get_or_404(invoice_id)
-    if invoice.owner != current_user:
+    if invoice.user_id != current_user.id:  # CORRECTED CHECK
         abort(403)
-
+    # ... rest of the function is the same ...
     query = text("""
         SELECT p.name, ii.quantity, ii.price
         FROM invoice_items AS ii
@@ -113,11 +111,9 @@ def download_invoice(invoice_id):
     """)
     invoice_items_details = db.session.execute(
         query, {'invoice_id': invoice.id}).fetchall()
-
     rendered_html = render_template(
         'billing/invoice_pdf.html', invoice=invoice, items=invoice_items_details)
     pdf = weasyprint.HTML(string=rendered_html).write_pdf()
-
     return Response(pdf, mimetype='application/pdf', headers={
         'Content-Disposition': f'attachment; filename=invoice_{invoice.invoice_number}.pdf'
     })

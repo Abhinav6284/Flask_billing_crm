@@ -15,7 +15,7 @@ products_bp = Blueprint('products', __name__)
 def list_products():
     page = request.args.get('page', 1, type=int)
     products = Product.query.filter_by(
-        owner=current_user).paginate(page=page, per_page=10)
+        owner_id=current_user.id).paginate(page=page, per_page=10)
     return render_template('products/products.html', products=products, title='Products & Services')
 
 
@@ -25,7 +25,7 @@ def new_product():
     form = ProductForm()
     if form.validate_on_submit():
         product = Product(name=form.name.data, description=form.description.data,
-                          price=form.price.data, owner=current_user)
+                          price=form.price.data, owner_id=current_user.id)
         db.session.add(product)
         db.session.commit()
         flash('Your product/service has been created!', 'success')
@@ -37,7 +37,7 @@ def new_product():
 @login_required
 def edit_product(product_id):
     product = Product.query.get_or_404(product_id)
-    if product.owner != current_user:
+    if product.owner_id != current_user.id:
         abort(403)
     form = ProductForm()
     if form.validate_on_submit():
@@ -58,7 +58,7 @@ def edit_product(product_id):
 @login_required
 def delete_product(product_id):
     product = Product.query.get_or_404(product_id)
-    if product.owner != current_user:
+    if product.owner_id != current_user.id:
         abort(403)
     db.session.delete(product)
     db.session.commit()
@@ -69,7 +69,7 @@ def delete_product(product_id):
 @products_bp.route("/api/products")
 @login_required
 def api_products():
-    products = Product.query.filter_by(owner=current_user).all()
+    products = Product.query.filter_by(owner_id=current_user.id).all()
     return jsonify([{
         'id': p.id,
         'name': p.name,
@@ -87,7 +87,7 @@ def api_new_product():
         name=data['name'],
         description=data.get('description', ''),
         price=data['price'],
-        owner=current_user
+        owner_id=current_user.id
     )
     db.session.add(product)
     db.session.commit()
@@ -97,7 +97,7 @@ def api_new_product():
 @products_bp.route("/export/csv")
 @login_required
 def export_products_csv():
-    products = Product.query.filter_by(owner=current_user).all()
+    products = Product.query.filter_by(owner_id=current_user.id).all()
 
     output = io.StringIO()
     writer = csv.writer(output)

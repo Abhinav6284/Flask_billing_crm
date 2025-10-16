@@ -15,7 +15,7 @@ crm_bp = Blueprint('crm', __name__)
 def list_customers():
     page = request.args.get('page', 1, type=int)
     customers = Customer.query.filter_by(
-        owner=current_user).paginate(page=page, per_page=10)
+        owner_id=current_user.id).paginate(page=page, per_page=10)
     return render_template('crm/customers.html', customers=customers, title='Customers')
 
 
@@ -25,7 +25,7 @@ def new_customer():
     form = CustomerForm()
     if form.validate_on_submit():
         customer = Customer(name=form.name.data, email=form.email.data,
-                            phone=form.phone.data, address=form.address.data, owner=current_user)
+                            phone=form.phone.data, address=form.address.data, owner_id=current_user.id)
         db.session.add(customer)
         db.session.commit()
         flash('Customer has been created!', 'success')
@@ -37,7 +37,7 @@ def new_customer():
 @login_required
 def view_customer(customer_id):
     customer = Customer.query.get_or_404(customer_id)
-    if customer.owner != current_user:
+    if customer.owner_id != current_user.id:
         abort(403)
     return render_template('crm/customer_detail.html', title=customer.name, customer=customer)
 
@@ -46,7 +46,7 @@ def view_customer(customer_id):
 @login_required
 def edit_customer(customer_id):
     customer = Customer.query.get_or_404(customer_id)
-    if customer.owner != current_user:
+    if customer.owner_id != current_user.id:
         abort(403)
     form = CustomerForm()
     if form.validate_on_submit():
@@ -69,7 +69,7 @@ def edit_customer(customer_id):
 @login_required
 def delete_customer(customer_id):
     customer = Customer.query.get_or_404(customer_id)
-    if customer.owner != current_user:
+    if customer.owner_id != current_user.id:
         abort(403)
     db.session.delete(customer)
     db.session.commit()
@@ -80,7 +80,7 @@ def delete_customer(customer_id):
 @crm_bp.route("/api/customers")
 @login_required
 def api_customers():
-    customers = Customer.query.filter_by(owner=current_user).all()
+    customers = Customer.query.filter_by(owner_id=current_user.id).all()
     return jsonify([{
         'id': c.id,
         'name': c.name,
@@ -99,7 +99,7 @@ def api_new_customer():
         email=data['email'],
         phone=data['phone'],
         address=data.get('address', ''),
-        owner=current_user
+        owner_id=current_user.id
     )
     db.session.add(customer)
     db.session.commit()
@@ -109,7 +109,7 @@ def api_new_customer():
 @crm_bp.route("/export/csv")
 @login_required
 def export_customers_csv():
-    customers = Customer.query.filter_by(owner=current_user).all()
+    customers = Customer.query.filter_by(owner_id=current_user.id).all()
 
     output = io.StringIO()
     writer = csv.writer(output)
