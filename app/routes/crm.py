@@ -135,3 +135,20 @@ def export_customers_csv():
         mimetype="text/csv",
         headers={"Content-Disposition": "attachment;filename=customers.csv"}
     )
+
+
+@crm_bp.route("/api/<int:customer_id>/delete", methods=['DELETE'])
+@login_required
+def api_delete_customer(customer_id):
+    """API endpoint to delete a customer."""
+    customer = Customer.query.get_or_404(customer_id)
+    if customer.owner_id != current_user.id:
+        abort(403)
+
+    # Prevent deletion if customer has invoices
+    if customer.invoices:
+        return jsonify({'success': False, 'message': 'Cannot delete customer with existing invoices.'}), 400
+
+    db.session.delete(customer)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Customer deleted successfully.'})

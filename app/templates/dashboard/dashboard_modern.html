@@ -76,37 +76,30 @@
     <div class="quick-actions-section mb-4">
         <h4><i class="fas fa-bolt"></i> Quick Actions</h4>
         <div class="row">
-            <div class="col-md-3">
+            <div class="col-lg-3 col-md-6 mb-3">
                 <button class="quick-action-btn" data-bs-toggle="modal" data-bs-target="#newCustomerModal">
                     <i class="fas fa-user-plus"></i>
                     <span>Add Customer</span>
                 </button>
             </div>
-            <div class="col-md-3">
+            <div class="col-lg-3 col-md-6 mb-3">
                 <button class="quick-action-btn" data-bs-toggle="modal" data-bs-target="#newProductModal">
                     <i class="fas fa-plus-square"></i>
                     <span>Add Product</span>
                 </button>
             </div>
-            <button class="quick-action-btn" data-bs-toggle="modal" data-bs-target="#newInvoiceModal">
-                <i class="fas fa-file-plus"></i>
-                <span>Create Invoice</span>
-            </button>
-
-            <a href="{{ url_for('billing.new_invoice') }}" class="quick-action-btn text-decoration-none">
-                <i class="fas fa-file-plus"></i>
-                <span>Create Invoice</span>
-            </a>
-            <div class="col-md-3">
-                <button class="quick-action-btn" onclick="generateReport()">
+            <div class="col-lg-3 col-md-6 mb-3">
+                <a href="{{ url_for('billing.new_invoice') }}" class="quick-action-btn text-decoration-none">
+                    <i class="fas fa-file-plus"></i>
+                    <span>Create Invoice</span>
+                </a>
+            </div>
+            <div class="col-lg-3 col-md-6 mb-3">
+                <a href="#reports" class="quick-action-btn text-decoration-none"
+                    onclick="window.location.hash='reports'">
                     <i class="fas fa-chart-bar"></i>
                     <span>Generate Report</span>
-                </button>
-
-                <button class="quick-action-btn" onclick="switchTab('reports')">
-                    <i class="fas fa-chart-bar"></i>
-                    <span>Generate Report</span>
-                </button>
+                </a>
             </div>
         </div>
     </div>
@@ -504,13 +497,12 @@
             </div>
             <div class="col-md-2">
                 <label class="form-label">&nbsp;</label>
-                <button class="btn btn-primary w-100" onclick="generateReport()">
+                <button class="btn btn-primary w-100" id="generateReportBtn">
                     <i class="fas fa-chart-line"></i> Generate
                 </button>
             </div>
         </div>
     </div>
-
     <!-- Reports Grid -->
     <div class="reports-grid">
         <div class="row">

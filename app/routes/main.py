@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, jsonify
+from datetime import datetime
+from flask import Blueprint, render_template, jsonify, request
 from flask_login import login_required, current_user
 from extensions import db
 from app.models.customer import Customer
@@ -67,3 +68,73 @@ def dashboard_data():
             'status': i.status, 'total': float(i.get_total())
         } for i in invoices]
     })
+
+
+@main_bp.route("/api/reports", methods=['POST'])
+@login_required
+def get_reports():
+    """
+    Generate report data based on user filters.
+    """
+    data = request.get_json()
+    report_type = data.get('report_type')
+    start_date_str = data.get('start_date')
+    end_date_str = data.get('end_date')
+
+    try:
+        start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
+        end_date = datetime.strptime(
+            end_date_str, '%Y-%m-%d').replace(hour=23, minute=59, second=59)
+    except (ValueError, TypeError):
+        # Default to today if dates are invalid
+        today = datetime.utcnow()
+        start_date = today.replace(hour=0, minute=0, second=0)
+        end_date = today.replace(hour=23, minute=59, second=59)
+
+    response_data = {}
+
+    if report_type == 'sales':
+        # --- Sales Performance & Revenue Trends Data ---
+        invoices = Invoice.query.filter(
+            Invoice.user_id == current_user.id,
+            Invoice.date_issued.between(start_date, end_date)
+        ).order_by(Invoice.date_issued).all()
+
+        daily_totals = {}
+        for inv in invoices:
+            date_key = inv.date_issued.strftime('%Y-%m-%d')
+            daily_totals[date_key] = daily_totals.get(
+                date_key, 0) + inv.get_total()
+
+        response_data['sales_performance'] = {
+            'labels': list(daily_totals.keys()),
+            'data': list(daily_totals.values())
+        }
+        response_data['revenue_trends'] = response_data['sales_performance']
+
+        # --- Customer Growth Data ---
+        customers = Customer.query.filter(
+            Customer.owner_id == current_user.id,
+            Customer.created_at.between(start_date, end_date)
+        ).order_by(Customer.created_at).all()
+
+        daily_new_customers = {}
+        for cust in customers:
+            date_key = cust.created_at.strftime('%Y-%m-%d')
+            daily_new_customers[date_key] = daily_new_customers.get(
+                date_key, 0) + 1
+
+        # Ensure all dates from sales have a corresponding customer entry (even if zero)
+        for date_key in daily_totals.keys():
+            if date_key not in daily_new_customers:
+                daily_new_customers[date_key] = 0
+
+        # Sort by date
+        sorted_dates = sorted(daily_new_customers.keys())
+
+        response_data['customer_growth'] = {
+            'labels': sorted_dates,
+            'data': [daily_new_customers[d] for d in sorted_dates]
+        }
+
+    return jsonify(response_data)

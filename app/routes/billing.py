@@ -65,7 +65,7 @@ def new_invoice():
 
         db.session.commit()
         flash('Invoice created successfully!', 'success')
-        return redirect(url_for('billing.list_invoices'))
+        return redirect(url_for('main.dashboard'))
 
     product_prices = {p.id: float(p.price) for p in products}
 

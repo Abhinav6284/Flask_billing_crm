@@ -25,11 +25,12 @@ def new_product():
     form = ProductForm()
     if form.validate_on_submit():
         product = Product(name=form.name.data, description=form.description.data,
-                          price=form.price.data, owner_id=current_user.id)
+                          price=form.price.data, owner_id=current_user.id)  # Correctly assign owner_id
         db.session.add(product)
         db.session.commit()
         flash('Your product/service has been created!', 'success')
-        return redirect(url_for('products.list_products'))
+        # CORRECTED REDIRECT:
+        return redirect(url_for('main.dashboard'))
     return render_template('products/product_form.html', title='New Product', form=form, legend='New Product/Service')
 
 
@@ -125,3 +126,19 @@ def export_products_csv():
         mimetype="text/csv",
         headers={"Content-Disposition": "attachment;filename=products.csv"}
     )
+
+
+@products_bp.route("/api/<int:product_id>/delete", methods=['DELETE'])
+@login_required
+def api_delete_product(product_id):
+    """API endpoint to delete a product."""
+    product = Product.query.get_or_404(product_id)
+    if product.owner_id != current_user.id:
+        abort(403)
+
+    # Note: A more robust check would see if the product is on any invoices.
+    # This is a simple deletion for now.
+
+    db.session.delete(product)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Product deleted successfully.'})
