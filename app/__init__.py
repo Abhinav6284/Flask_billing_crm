@@ -1,6 +1,6 @@
 from flask import Flask
 from config import Config
-from extensions import db, migrate, login_manager, bcrypt
+from extensions import db, migrate, login_manager, bcrypt, csrf
 
 
 def create_app(config_class=Config):
@@ -12,6 +12,7 @@ def create_app(config_class=Config):
     migrate.init_app(app, db)
     login_manager.init_app(app)
     bcrypt.init_app(app)
+    csrf.init_app(app)
 
     # Register blueprints
     from app.routes.auth import auth_bp

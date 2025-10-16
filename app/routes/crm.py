@@ -3,6 +3,9 @@ from flask_login import login_required, current_user
 from extensions import db
 from app.models.customer import Customer
 from app.forms.crm_forms import CustomerForm
+import io
+import csv
+from flask import Response
 
 crm_bp = Blueprint('crm', __name__)
 
@@ -101,3 +104,34 @@ def api_new_customer():
     db.session.add(customer)
     db.session.commit()
     return jsonify({'success': True, 'message': 'Customer created successfully!'})
+
+
+@crm_bp.route("/export/csv")
+@login_required
+def export_customers_csv():
+    customers = Customer.query.filter_by(owner=current_user).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Write header
+    writer.writerow(['ID', 'Name', 'Email', 'Phone', 'Address', 'Status'])
+
+    # Write data
+    for customer in customers:
+        writer.writerow([
+            customer.id,
+            customer.name,
+            customer.email,
+            customer.phone,
+            customer.address,
+            customer.status
+        ])
+
+    output.seek(0)
+
+    return Response(
+        output,
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment;filename=customers.csv"}
+    )

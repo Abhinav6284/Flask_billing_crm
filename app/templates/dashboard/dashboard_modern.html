@@ -88,12 +88,15 @@
                     <span>Add Product</span>
                 </button>
             </div>
-            <div class="col-md-3">
-                <button class="quick-action-btn" data-bs-toggle="modal" data-bs-target="#newInvoiceModal">
-                    <i class="fas fa-file-plus"></i>
-                    <span>Create Invoice</span>
-                </button>
-            </div>
+            <button class="quick-action-btn" data-bs-toggle="modal" data-bs-target="#newInvoiceModal">
+                <i class="fas fa-file-plus"></i>
+                <span>Create Invoice</span>
+            </button>
+
+            <a href="{{ url_for('billing.new_invoice') }}" class="quick-action-btn text-decoration-none">
+                <i class="fas fa-file-plus"></i>
+                <span>Create Invoice</span>
+            </a>
             <div class="col-md-3">
                 <button class="quick-action-btn" onclick="generateReport()">
                     <i class="fas fa-chart-bar"></i>
@@ -225,7 +228,8 @@
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newCustomerModal">
                 <i class="fas fa-plus"></i> Add New Customer
             </button>
-            <button class="btn btn-outline-secondary" onclick="exportCustomers()">
+            <button class="btn btn-outline-secondary"
+                onclick="window.location.href='{{ url_for('crm.export_customers_csv') }}'">
                 <i class="fas fa-download"></i> Export
             </button>
         </div>
@@ -284,7 +288,8 @@
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newProductModal">
                 <i class="fas fa-plus"></i> Add New Product
             </button>
-            <button class="btn btn-outline-secondary" onclick="exportProducts()">
+            <button class="btn btn-outline-secondary"
+                onclick="window.location.href='{{ url_for('products.export_products_csv') }}'">
                 <i class="fas fa-download"></i> Export
             </button>
         </div>

@@ -3,6 +3,9 @@ from flask_login import login_required, current_user
 from extensions import db
 from app.models.product import Product
 from app.forms.product_forms import ProductForm
+import io
+import csv
+from flask import Response
 
 products_bp = Blueprint('products', __name__)
 
@@ -89,3 +92,36 @@ def api_new_product():
     db.session.add(product)
     db.session.commit()
     return jsonify({'success': True, 'message': 'Product created successfully!'})
+
+
+@products_bp.route("/export/csv")
+@login_required
+def export_products_csv():
+    products = Product.query.filter_by(owner=current_user).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    # Write header
+    writer.writerow(['ID', 'Name', 'Description', 'Price',
+                    'Category', 'Stock', 'Status'])
+
+    # Write data
+    for product in products:
+        writer.writerow([
+            product.id,
+            product.name,
+            product.description,
+            product.price,
+            product.category,
+            product.stock_quantity,
+            product.status
+        ])
+
+    output.seek(0)
+
+    return Response(
+        output,
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment;filename=products.csv"}
+    )
