@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, url_for, flash, redirect, request
+from flask import Blueprint, abort, jsonify, render_template, url_for, flash, redirect, request
 from flask_login import login_required, current_user
 from extensions import db
 from app.models.customer import Customer
@@ -72,3 +72,32 @@ def delete_customer(customer_id):
     db.session.commit()
     flash('Customer has been deleted!', 'success')
     return redirect(url_for('crm.list_customers'))
+
+
+@crm_bp.route("/api/customers")
+@login_required
+def api_customers():
+    customers = Customer.query.filter_by(owner=current_user).all()
+    return jsonify([{
+        'id': c.id,
+        'name': c.name,
+        'email': c.email,
+        'phone': c.phone,
+        'address': c.address
+    } for c in customers])
+
+
+@crm_bp.route("/api/new", methods=['POST'])
+@login_required
+def api_new_customer():
+    data = request.get_json()
+    customer = Customer(
+        name=data['name'],
+        email=data['email'],
+        phone=data['phone'],
+        address=data.get('address', ''),
+        owner=current_user
+    )
+    db.session.add(customer)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Customer created successfully!'})

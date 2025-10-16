@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, url_for, flash, redirect, request, abort
+from flask import Blueprint, jsonify, render_template, url_for, flash, redirect, request, abort
 from flask_login import login_required, current_user
 from extensions import db
 from app.models.product import Product
@@ -61,3 +61,31 @@ def delete_product(product_id):
     db.session.commit()
     flash('Your product/service has been deleted!', 'success')
     return redirect(url_for('products.list_products'))
+
+
+@products_bp.route("/api/products")
+@login_required
+def api_products():
+    products = Product.query.filter_by(owner=current_user).all()
+    return jsonify([{
+        'id': p.id,
+        'name': p.name,
+        'description': p.description,
+        'price': float(p.price),
+        'category': getattr(p, 'category', 'General')
+    } for p in products])
+
+
+@products_bp.route("/api/new", methods=['POST'])
+@login_required
+def api_new_product():
+    data = request.get_json()
+    product = Product(
+        name=data['name'],
+        description=data.get('description', ''),
+        price=data['price'],
+        owner=current_user
+    )
+    db.session.add(product)
+    db.session.commit()
+    return jsonify({'success': True, 'message': 'Product created successfully!'})

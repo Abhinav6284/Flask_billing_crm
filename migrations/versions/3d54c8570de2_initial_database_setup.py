@@ -1,8 +1,8 @@
-"""empty message
+"""Initial database setup
 
-Revision ID: 99c78bb9ed1f
+Revision ID: 3d54c8570de2
 Revises: 
-Create Date: 2025-10-03 16:52:57.997321
+Create Date: 2025-10-15 22:37:04.725165
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '99c78bb9ed1f'
+revision = '3d54c8570de2'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -30,20 +30,36 @@ def upgrade():
     op.create_table('customer',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
-    sa.Column('email', sa.String(length=120), nullable=True),
-    sa.Column('phone', sa.String(length=20), nullable=True),
+    sa.Column('email', sa.String(length=120), nullable=False),
+    sa.Column('phone', sa.String(length=20), nullable=False),
+    sa.Column('company', sa.String(length=100), nullable=True),
     sa.Column('address', sa.Text(), nullable=True),
-    sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.Column('city', sa.String(length=50), nullable=True),
+    sa.Column('state', sa.String(length=50), nullable=True),
+    sa.Column('postal_code', sa.String(length=10), nullable=True),
+    sa.Column('country', sa.String(length=50), nullable=True),
+    sa.Column('tax_number', sa.String(length=20), nullable=True),
+    sa.Column('customer_type', sa.String(length=20), nullable=True),
+    sa.Column('status', sa.String(length=20), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('owner_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['owner_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('product',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(length=100), nullable=False),
     sa.Column('description', sa.Text(), nullable=True),
-    sa.Column('price', sa.Float(), nullable=False),
-    sa.Column('user_id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['user_id'], ['user.id'], ),
+    sa.Column('price', sa.Numeric(precision=10, scale=2), nullable=False),
+    sa.Column('category', sa.String(length=50), nullable=True),
+    sa.Column('unit', sa.String(length=20), nullable=True),
+    sa.Column('stock_quantity', sa.Integer(), nullable=True),
+    sa.Column('sku', sa.String(length=50), nullable=True),
+    sa.Column('tax_rate', sa.Numeric(precision=5, scale=2), nullable=True),
+    sa.Column('status', sa.String(length=20), nullable=True),
+    sa.Column('created_at', sa.DateTime(), nullable=True),
+    sa.Column('owner_id', sa.Integer(), nullable=False),
+    sa.ForeignKeyConstraint(['owner_id'], ['user.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_table('invoice',
@@ -52,7 +68,6 @@ def upgrade():
     sa.Column('date_issued', sa.DateTime(), nullable=False),
     sa.Column('due_date', sa.DateTime(), nullable=True),
     sa.Column('status', sa.String(length=20), nullable=False),
-    sa.Column('discount', sa.Float(), nullable=False),
     sa.Column('customer_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['customer_id'], ['customer.id'], ),
@@ -65,6 +80,8 @@ def upgrade():
     sa.Column('product_id', sa.Integer(), nullable=False),
     sa.Column('quantity', sa.Integer(), nullable=False),
     sa.Column('price', sa.Float(), nullable=False),
+    sa.Column('discount', sa.Float(), nullable=False),
+    sa.Column('tax', sa.Float(), nullable=False),
     sa.ForeignKeyConstraint(['invoice_id'], ['invoice.id'], ),
     sa.ForeignKeyConstraint(['product_id'], ['product.id'], ),
     sa.PrimaryKeyConstraint('invoice_id', 'product_id')

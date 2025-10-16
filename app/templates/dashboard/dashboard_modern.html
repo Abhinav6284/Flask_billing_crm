@@ -1,0 +1,596 @@
+{% extends "layout_dashboard.html" %}
+{% block content %}
+
+<!-- Dashboard Overview Tab -->
+<div class="tab-content" id="dashboard" style="display: block;">
+    <!-- Welcome Message -->
+    <div class="welcome-section mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="welcome-title">Welcome back, {{ current_user.username }}!</h2>
+                <p class="welcome-subtitle">Here's what's happening with your business today.</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="date-info">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span id="currentDate"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row stats-row">
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card revenue">
+                <div class="stat-icon">
+                    <i class="fas fa-rupee-sign"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 class="stat-number" id="totalRevenue">₹{{ '{:,.2f}'.format(stats.total_revenue) if stats else
+                        '0.00' }}</h3>
+                    <p class="stat-label">Total Revenue</p>
+                    <span class="stat-change positive">+12.5%</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card customers">
+                <div class="stat-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 class="stat-number" id="totalCustomers">{{ stats.total_customers if stats else '0' }}</h3>
+                    <p class="stat-label">Total Customers</p>
+                    <span class="stat-change positive">+5.2%</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card invoices">
+                <div class="stat-icon">
+                    <i class="fas fa-file-invoice"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 class="stat-number" id="totalInvoices">{{ stats.total_invoices if stats else '0' }}</h3>
+                    <p class="stat-label">Total Invoices</p>
+                    <span class="stat-change neutral">+0.8%</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="stat-card products">
+                <div class="stat-icon">
+                    <i class="fas fa-box"></i>
+                </div>
+                <div class="stat-info">
+                    <h3 class="stat-number" id="totalProducts">{{ stats.total_products if stats else '0' }}</h3>
+                    <p class="stat-label">Products/Services</p>
+                    <span class="stat-change positive">+3.1%</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions-section mb-4">
+        <h4><i class="fas fa-bolt"></i> Quick Actions</h4>
+        <div class="row">
+            <div class="col-md-3">
+                <button class="quick-action-btn" data-bs-toggle="modal" data-bs-target="#newCustomerModal">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Add Customer</span>
+                </button>
+            </div>
+            <div class="col-md-3">
+                <button class="quick-action-btn" data-bs-toggle="modal" data-bs-target="#newProductModal">
+                    <i class="fas fa-plus-square"></i>
+                    <span>Add Product</span>
+                </button>
+            </div>
+            <div class="col-md-3">
+                <button class="quick-action-btn" data-bs-toggle="modal" data-bs-target="#newInvoiceModal">
+                    <i class="fas fa-file-plus"></i>
+                    <span>Create Invoice</span>
+                </button>
+            </div>
+            <div class="col-md-3">
+                <button class="quick-action-btn" onclick="generateReport()">
+                    <i class="fas fa-chart-bar"></i>
+                    <span>Generate Report</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row charts-row">
+        <div class="col-xl-8">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h4><i class="fas fa-chart-line"></i> Revenue Analytics</h4>
+                    <div class="chart-controls">
+                        <select class="form-select form-select-sm" id="revenueTimeframe">
+                            <option value="30">Last 30 Days</option>
+                            <option value="90">Last 3 Months</option>
+                            <option value="365">Last Year</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="chart-body">
+                    <canvas id="revenueChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-4">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <h4><i class="fas fa-chart-pie"></i> Sales by Category</h4>
+                </div>
+                <div class="chart-body">
+                    <canvas id="categoriesChart" width="200" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row activity-row">
+        <div class="col-xl-6">
+            <div class="activity-card">
+                <div class="card-header">
+                    <h4><i class="fas fa-clock"></i> Recent Invoices</h4>
+                    <a href="#invoices" class="view-all-btn" data-tab="invoices">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="recent-list" id="recentInvoices">
+                        {% if recent_invoices %}
+                        {% for invoice in recent_invoices %}
+                        <div class="recent-item">
+                            <div class="item-icon">
+                                <i class="fas fa-file-invoice"></i>
+                            </div>
+                            <div class="item-info">
+                                <strong>{{ invoice.invoice_number }}</strong>
+                                <span>{{ invoice.customer.name }}</span>
+                            </div>
+                            <div class="item-meta">
+                                <span class="amount">₹{{ '{:,.2f}'.format(invoice.get_total()) }}</span>
+                                <span class="status status-{{ invoice.status.lower() }}">{{ invoice.status }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-inbox"></i>
+                            <p>No recent invoices</p>
+                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                                data-bs-target="#newInvoiceModal">
+                                Create First Invoice
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-6">
+            <div class="activity-card">
+                <div class="card-header">
+                    <h4><i class="fas fa-user-friends"></i> Recent Customers</h4>
+                    <a href="#customers" class="view-all-btn" data-tab="customers">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="recent-list" id="recentCustomers">
+                        {% if recent_customers %}
+                        {% for customer in recent_customers %}
+                        <div class="recent-item">
+                            <div class="item-icon">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="item-info">
+                                <strong>{{ customer.name }}</strong>
+                                <span>{{ customer.email }}</span>
+                            </div>
+                            <div class="item-meta">
+                                <span>{{ customer.phone }}</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                        {% else %}
+                        <div class="empty-state">
+                            <i class="fas fa-users"></i>
+                            <p>No customers yet</p>
+                            <button class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                                data-bs-target="#newCustomerModal">
+                                Add First Customer
+                            </button>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Customers Tab -->
+<div class="tab-content" id="customers" style="display: none;">
+    <div class="section-header">
+        <div class="section-title">
+            <h2><i class="fas fa-users"></i> Customer Management</h2>
+            <p>Manage your customer database and relationships</p>
+        </div>
+        <div class="section-actions">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newCustomerModal">
+                <i class="fas fa-plus"></i> Add New Customer
+            </button>
+            <button class="btn btn-outline-secondary" onclick="exportCustomers()">
+                <i class="fas fa-download"></i> Export
+            </button>
+        </div>
+    </div>
+
+    <div class="data-card">
+        <div class="card-header">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" class="form-control" placeholder="Search customers..." id="customerSearch">
+            </div>
+            <div class="filter-controls">
+                <select class="form-select" id="customerFilter">
+                    <option value="">All Customers</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+                <select class="form-select" id="customerType">
+                    <option value="">All Types</option>
+                    <option value="individual">Individual</option>
+                    <option value="business">Business</option>
+                </select>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover modern-table" id="customersTable">
+                    <thead>
+                        <tr>
+                            <th>Customer</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Type</th>
+                            <th>Total Orders</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dynamic content will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Products Tab -->
+<div class="tab-content" id="products" style="display: none;">
+    <div class="section-header">
+        <div class="section-title">
+            <h2><i class="fas fa-box"></i> Product & Service Catalog</h2>
+            <p>Manage your products, services, and inventory</p>
+        </div>
+        <div class="section-actions">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newProductModal">
+                <i class="fas fa-plus"></i> Add New Product
+            </button>
+            <button class="btn btn-outline-secondary" onclick="exportProducts()">
+                <i class="fas fa-download"></i> Export
+            </button>
+        </div>
+    </div>
+
+    <div class="data-card">
+        <div class="card-header">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" class="form-control" placeholder="Search products..." id="productSearch">
+            </div>
+            <div class="filter-controls">
+                <select class="form-select" id="productCategory">
+                    <option value="">All Categories</option>
+                    <option value="product">Products</option>
+                    <option value="service">Services</option>
+                    <option value="digital">Digital</option>
+                </select>
+                <select class="form-select" id="productStatus">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover modern-table" id="productsTable">
+                    <thead>
+                        <tr>
+                            <th>Product/Service</th>
+                            <th>Category</th>
+                            <th>Price</th>
+                            <th>Stock</th>
+                            <th>SKU</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dynamic content will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Invoices Tab -->
+<div class="tab-content" id="invoices" style="display: none;">
+    <div class="section-header">
+        <div class="section-title">
+            <h2><i class="fas fa-file-invoice"></i> Invoice Management</h2>
+            <p>Create, track, and manage customer invoices</p>
+        </div>
+        <div class="section-actions">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newInvoiceModal">
+                <i class="fas fa-plus"></i> Create Invoice
+            </button>
+            <button class="btn btn-outline-secondary" onclick="exportInvoices()">
+                <i class="fas fa-download"></i> Export
+            </button>
+        </div>
+    </div>
+
+    <!-- Invoice Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="mini-stat-card">
+                <div class="mini-stat-icon paid">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="mini-stat-info">
+                    <h4 id="paidInvoices">0</h4>
+                    <span>Paid Invoices</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="mini-stat-card">
+                <div class="mini-stat-icon pending">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="mini-stat-info">
+                    <h4 id="pendingInvoices">0</h4>
+                    <span>Pending</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="mini-stat-card">
+                <div class="mini-stat-icon overdue">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="mini-stat-info">
+                    <h4 id="overdueInvoices">0</h4>
+                    <span>Overdue</span>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="mini-stat-card">
+                <div class="mini-stat-icon draft">
+                    <i class="fas fa-file-alt"></i>
+                </div>
+                <div class="mini-stat-info">
+                    <h4 id="draftInvoices">0</h4>
+                    <span>Draft</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="data-card">
+        <div class="card-header">
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" class="form-control" placeholder="Search invoices..." id="invoiceSearch">
+            </div>
+            <div class="filter-controls">
+                <select class="form-select" id="invoiceStatus">
+                    <option value="">All Status</option>
+                    <option value="paid">Paid</option>
+                    <option value="pending">Pending</option>
+                    <option value="overdue">Overdue</option>
+                    <option value="draft">Draft</option>
+                </select>
+                <input type="date" class="form-control" id="invoiceDateFrom" placeholder="From Date">
+                <input type="date" class="form-control" id="invoiceDateTo" placeholder="To Date">
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover modern-table" id="invoicesTable">
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Customer</th>
+                            <th>Date</th>
+                            <th>Due Date</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Dynamic content will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Reports Tab -->
+<div class="tab-content" id="reports" style="display: none;">
+    <div class="section-header">
+        <div class="section-title">
+            <h2><i class="fas fa-chart-bar"></i> Reports & Analytics</h2>
+            <p>Business insights and performance metrics</p>
+        </div>
+        <div class="section-actions">
+            <button class="btn btn-primary" onclick="generateCustomReport()">
+                <i class="fas fa-plus"></i> Custom Report
+            </button>
+            <button class="btn btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                <i class="fas fa-download"></i> Export Report
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="#" onclick="exportReport('pdf')">PDF Report</a></li>
+                <li><a class="dropdown-item" href="#" onclick="exportReport('excel')">Excel Report</a></li>
+                <li><a class="dropdown-item" href="#" onclick="exportReport('csv')">CSV Data</a></li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Report Filters -->
+    <div class="report-filters mb-4">
+        <div class="row">
+            <div class="col-md-3">
+                <label class="form-label">Report Type</label>
+                <select class="form-select" id="reportType">
+                    <option value="sales">Sales Report</option>
+                    <option value="customer">Customer Report</option>
+                    <option value="product">Product Performance</option>
+                    <option value="tax">Tax Report</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Date Range</label>
+                <select class="form-select" id="reportRange">
+                    <option value="today">Today</option>
+                    <option value="week">This Week</option>
+                    <option value="month">This Month</option>
+                    <option value="quarter">This Quarter</option>
+                    <option value="year">This Year</option>
+                    <option value="custom">Custom Range</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">From</label>
+                <input type="date" class="form-control" id="reportFromDate">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">To</label>
+                <input type="date" class="form-control" id="reportToDate">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button class="btn btn-primary w-100" onclick="generateReport()">
+                    <i class="fas fa-chart-line"></i> Generate
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reports Grid -->
+    <div class="reports-grid">
+        <div class="row">
+            <div class="col-12">
+                <div class="report-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-chart-area"></i> Sales Performance</h4>
+                        <div class="report-controls">
+                            <button class="btn btn-sm btn-outline-primary" onclick="refreshReport()">
+                                <i class="fas fa-sync"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="salesChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="report-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-users"></i> Customer Growth</h4>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="customerGrowthChart"></canvas>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="report-card">
+                    <div class="card-header">
+                        <h4><i class="fas fa-coins"></i> Revenue Trends</h4>
+                    </div>
+                    <div class="card-body">
+                        <canvas id="revenueTrendsChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock content %}
+
+{% block scripts %}
+<script>
+    // Set current date
+    document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-IN', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+
+    // Export functions
+    function exportCustomers() {
+        window.location.href = '/api/export/customers';
+    }
+
+    function exportProducts() {
+        window.location.href = '/api/export/products';
+    }
+
+    function exportInvoices() {
+        window.location.href = '/api/export/invoices';
+    }
+
+    function generateReport() {
+        const type = document.getElementById('reportType').value;
+        const range = document.getElementById('reportRange').value;
+        // Add report generation logic here
+        console.log('Generating report:', type, range);
+    }
+
+    function generateCustomReport() {
+        // Open custom report modal or page
+        console.log('Opening custom report builder');
+    }
+
+    function exportReport(format) {
+        // Export report in specified format
+        console.log('Exporting report as:', format);
+    }
+
+    function refreshReport() {
+        // Refresh current report
+        console.log('Refreshing report');
+    }
+</script>
+{% endblock scripts %}

@@ -1,80 +1,119 @@
-{% extends "layout.html" %}
+{% extends "layout_old.html" %}
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <form method="POST" action="" novalidate>
-                    {{ form.hidden_tag() }}
-                    <fieldset class="form-group">
-                        <legend class="border-bottom mb-4 text-center">Join Today</legend>
+<div class="auth-container">
+    <div class="auth-card register-card">
+        <div class="auth-card-header">
+            <div class="auth-icon">
+                <i class="fas fa-user-plus"></i>
+            </div>
+            <h2 class="auth-title">Create Account</h2>
+            <p class="auth-subtitle">Join thousands of jewelry businesses using AuricCRM</p>
+        </div>
 
-                        <div class="mb-3">
-                            {{ form.username.label(class="form-label") }}
-                            {% if form.username.errors %}
-                            {{ form.username(class="form-control is-invalid") }}
-                            <div class="invalid-feedback">
-                                {% for error in form.username.errors %}
-                                <span>{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                            {% else %}
-                            {{ form.username(class="form-control") }}
-                            {% endif %}
-                        </div>
+        <div class="auth-card-body">
+            <form method="POST" action="" class="auth-form" novalidate>
+                {{ form.hidden_tag() }}
 
-                        <div class="mb-3">
-                            {{ form.email.label(class="form-label") }}
-                            {% if form.email.errors %}
-                            {{ form.email(class="form-control is-invalid") }}
-                            <div class="invalid-feedback">
-                                {% for error in form.email.errors %}
-                                <span>{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                            {% else %}
-                            {{ form.email(class="form-control") }}
-                            {% endif %}
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.password.label(class="form-label") }}
-                            {% if form.password.errors %}
-                            {{ form.password(class="form-control is-invalid") }}
-                            <div class="invalid-feedback">
-                                {% for error in form.password.errors %}
-                                <span>{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                            {% else %}
-                            {{ form.password(class="form-control") }}
-                            {% endif %}
-                        </div>
-
-                        <div class="mb-3">
-                            {{ form.confirm_password.label(class="form-label") }}
-                            {% if form.confirm_password.errors %}
-                            {{ form.confirm_password(class="form-control is-invalid") }}
-                            <div class="invalid-feedback">
-                                {% for error in form.confirm_password.errors %}
-                                <span>{{ error }}</span>
-                                {% endfor %}
-                            </div>
-                            {% else %}
-                            {{ form.confirm_password(class="form-control") }}
-                            {% endif %}
-                        </div>
-                    </fieldset>
-                    <div class="d-grid gap-2">
-                        {{ form.submit(class="btn btn-primary") }}
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <i class="fas fa-user input-icon"></i>
+                        {{ form.username(class="auth-input", placeholder="Enter username") }}
+                        {{ form.username.label(class="auth-label") }}
                     </div>
-                </form>
+                    {% if form.username.errors %}
+                    <div class="auth-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {% for error in form.username.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <i class="fas fa-envelope input-icon"></i>
+                        {{ form.email(class="auth-input", placeholder="Enter your email") }}
+                        {{ form.email.label(class="auth-label") }}
+                    </div>
+                    {% if form.email.errors %}
+                    <div class="auth-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {% for error in form.email.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        {{ form.password(class="auth-input", placeholder="Create password") }}
+                        {{ form.password.label(class="auth-label") }}
+                        <button type="button" class="password-toggle"
+                            onclick="togglePassword('{{ form.password.id }}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.password.errors %}
+                    <div class="auth-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {% for error in form.password.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <i class="fas fa-lock input-icon"></i>
+                        {{ form.confirm_password(class="auth-input", placeholder="Confirm password") }}
+                        {{ form.confirm_password.label(class="auth-label") }}
+                        <button type="button" class="password-toggle"
+                            onclick="togglePassword('{{ form.confirm_password.id }}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    {% if form.confirm_password.errors %}
+                    <div class="auth-error">
+                        <i class="fas fa-exclamation-circle"></i>
+                        {% for error in form.confirm_password.errors %}{{ error }}{% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="form-group">
+                    {{ form.submit(class="auth-btn auth-btn-primary") }}
+                </div>
+            </form>
+        </div>
+
+        <div class="auth-card-footer">
+            <p class="auth-footer-text">
+                Already have an account?
+                <a href="{{ url_for('auth.login') }}" class="auth-link">Sign in here</a>
+            </p>
+        </div>
+    </div>
+
+    <div class="auth-benefits">
+        <h3>Why Choose AuricCRM?</h3>
+        <div class="benefit-item">
+            <i class="fas fa-gem"></i>
+            <div>
+                <strong>Jewelry-Specific Features</strong>
+                <p>Built specifically for gold and jewelry businesses</p>
             </div>
         </div>
-        <div class="border-top pt-3 mt-3 text-center">
-            <small class="text-muted">
-                Already Have An Account? <a class="ms-2" href="{{ url_for('auth.login') }}">Sign In</a>
-            </small>
+        <div class="benefit-item">
+            <i class="fas fa-chart-line"></i>
+            <div>
+                <strong>Real-time Analytics</strong>
+                <p>Track sales, inventory, and customer insights</p>
+            </div>
+        </div>
+        <div class="benefit-item">
+            <i class="fas fa-shield-alt"></i>
+            <div>
+                <strong>Secure & Reliable</strong>
+                <p>Bank-level security for your business data</p>
+            </div>
         </div>
     </div>
 </div>
